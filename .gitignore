@@ -1,3 +1,16 @@
 node_modules/
 .vite/
 .env
+# Node
+dist/
+
+# Laravel
+/vendor
+.env
+/storage/*.key
+/storage/logs
+/bootstrap/cache
+
+# OS
+.DS_Store
+Thumbs.db

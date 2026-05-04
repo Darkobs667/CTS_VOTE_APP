@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, MailQuestionMark, Lock, Eye, EyeOff, UserPlus, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from "react-router";
 import logocts from "../assets/logo-cts2-removebg-preview.png";
-import { authService } from '../services/authService'; // Assure-toi que ce service existe
+import authService  from '../services/authService'; // Assure-toi que ce service existe
 
 const SignUp = () => {
     const navigate = useNavigate();
@@ -49,26 +49,46 @@ const SignUp = () => {
         setServerError('');
     };
 
-    const handleSubmit = async (e) => {
+   const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // 1. Protection contre les doubles clics
+        if (loading) return;
         setLoading(true);
         setServerError('');
 
+        // 2. Préparation sécurisée des données
+        // On crée l'objet en s'assurant que les valeurs ne sont pas undefined
+        const dataForLaravel = {
+            first_name: formData.prenom || '', 
+            last_name: formData.nom || '',     
+            email: formData.email,
+            password: formData.password,
+            password_confirmation: formData.password,
+            code: null // 
+        };
+
+        // 3. LOG DE DÉBOGAGE 
+        console.log("TS-LOG: Tentative d'envoi vers Laravel...", dataForLaravel);
+
         try {
-            // On envoie les données au service API
-            await authService.register(formData); 
+           
+            const response = await authService.register(dataForLaravel);
             
-            // Si l'inscription réussit, on redirige vers le login avec un message de succès
-            alert("Compte créé avec succès ! Connectez-vous.");
+            console.log("TS-LOG: Succès Backend !", response);
+            alert("Félicitations ! Votre compte CYBER TECH SQUAD est créé.");
             navigate('/login');
+            
         } catch (error) {
-            console.error("Erreur d'inscription :", error);
-            setServerError(error.response?.data?.message || "Une erreur est survenue lors de l'inscription.");
+            // On récupère le message d'erreur précis du serveur s'il existe
+            const errorMsg = error.response?.data?.error || error.response?.data?.message || "Erreur de connexion au serveur.";
+            console.error("TS-LOG: Échec de l'inscription :", errorMsg);
+            
+            setServerError(`Erreur : ${errorMsg}`);
         } finally {
             setLoading(false);
         }
     };
-
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 font-sans text-slate-800">
             {/* Logo et Titre */}

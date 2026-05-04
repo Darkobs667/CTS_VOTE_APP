@@ -1,21 +1,23 @@
-// src/services/api.js
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api', // L'URL de l'API de ton collègue
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-    }
+  baseURL: 'http://127.0.0.1:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
 });
 
-// Intercepteur pour ajouter le Token à chaque requête automatiquement
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+// Intercepteur pour ajouter le token à chaque requête
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('user_tokenrefsh'); // ou sessionStorage, cookie...
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-});
+  },
+  (error) => Promise.reject(error)
+);
 
 export default api;

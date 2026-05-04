@@ -1,7 +1,7 @@
 import { User, Lock, LogIn, ShieldCheck, Mail, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from "react-router"; 
-import { authService } from '../services/authService'; // Import du nouveau service
+import authService  from '../services/authService'; // Import du nouveau service
 import logocts from "../assets/logo-cts2-removebg-preview.png";
 
 const LoginCTS = () => {
@@ -50,28 +50,48 @@ const LoginCTS = () => {
     setServerError('');
 
     try {
-      // Appel au service centralisé
-      // On envoie 'email' car Laravel attend souvent ce nom de champ
-      const data = await authService.login({
+      // 1. Appel au service (on garde ta logique d'envoi)
+      const response = await authService.login({
         email: formData.identifiant,
         password: formData.password
       });
 
-      console.log("Connexion réussie :", data);
+      console.log("Connexion réussie :", response);
 
-      // Redirection dynamique selon le rôle renvoyé par le Laravel de ton collègue
-      if (data.user.role === 'admin') {
+      // 2. STOCKAGE DU TOKEN ET DES INFOS (Indispensable pour rester connecté)
+      // On se base sur la réponse Postman : response.data contient access_token et user
+      if (response.data && response.data.access_token) {
+        console.log("token bien reçu !")
+        localStorage.setItem('user_token', response.data.access_token);
+        localStorage.setItem('user_tokenrefsh', response.data.refresh_token);
+        localStorage.setItem('user_data', JSON.stringify(response.data.user));
+        
+        // 3. REDIRECTION DYNAMIQUE
+        // On vérifie le rôle pour diriger au bon endroit
+        const userRole = response.data.user.role; 
+        console.log("Contenu du role :", userRole);
+        
+        if (userRole === 'admin') {
         navigate('/admin');
-      } else {
+        } else if (userRole === 'electeur') {
         navigate('/voterDashboard');
-      }
+        } else {
+        // Redirection de secours si le rôle est différent
+        navigate('/voterDashboard');
+        }
+        } else {
+        setServerError("Erreur : Token non reçu du serveur.");
+        }
+
     } catch (error) {
       console.error("Erreur de connexion :", error);
-      setServerError(error.response?.data?.message || "Identifiants incorrects ou serveur injoignable.");
+      // On récupère le message d'erreur précis du backend si possible
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || "Identifiants incorrects.";
+      setServerError(errorMsg);
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 font-sans text-slate-800">
@@ -160,7 +180,7 @@ const LoginCTS = () => {
             className={`btn w-full h-14 ${loading ? 'bg-slate-200' : 
               'bg-[#00d991] hover:bg-[#00c282]'} border-none
                text-slate-900 font-bold normal-case rounded-2xl 
-               gap-3 shadow-lg shadow-emerald-100 mt-4 transition-all`}
+               gap-3 shadow-lg flex items-center justify-center shadow-emerald-100 mt-4 transition-all`}
             type="submit"
           >
             {loading ? (
